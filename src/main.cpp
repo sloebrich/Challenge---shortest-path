@@ -90,8 +90,6 @@ InputData readInput(const std::string &filename)
         gateways.push_back(gateway);
     }
 
-    gateways.push_back(Gateway{LabeledPoint{end, "to"}, LabeledPoint{end, "to"}});
-
     std::vector<std::string>
         expectedPath;
 
@@ -105,25 +103,27 @@ InputData readInput(const std::string &filename)
 
 std::vector<std::string> findPath(const InputData &data)
 {
-    const auto &start = data.start;
+    const auto &start = LabeledPoint{data.start, "from"};
+    const auto &end = LabeledPoint{data.end, "to"};
     const auto &gateways = data.gateways;
 
-    std::vector<std::string> path;
+    std::vector<std::string>
+        path;
 
-    auto apex = LabeledPoint{start, "from"};
-    auto left = LabeledPoint{start, "from"};
-    auto right = LabeledPoint{start, "from"};
+    auto apex = start;
+    auto left = start;
+    auto right = start;
 
     std::size_t apexIndex = 0;
     std::size_t leftIndex = 0;
     std::size_t rightIndex = 0;
     std::size_t i = 0;
 
-    while (i < gateways.size())
+    while (i <= gateways.size())
     {
         bool apexNeedsUpdate = false;
-        const auto &newLeft = gateways[i].left;
-        const auto &newRight = gateways[i].right;
+        const auto &newLeft = i == gateways.size() ? end : gateways[i].left;
+        const auto &newRight = i == gateways.size() ? end : gateways[i].right;
 
         // newLeft lies to the right of apex->left, tightening the funnel.
         if (crossProduct(apex, left, newLeft) <= 0)
@@ -164,7 +164,7 @@ std::vector<std::string> findPath(const InputData &data)
             leftIndex = apexIndex;
             rightIndex = apexIndex;
 
-            if (apex.label != "to")
+            if (apex.label != end.label)
             {
                 path.push_back(apex.label);
             }
