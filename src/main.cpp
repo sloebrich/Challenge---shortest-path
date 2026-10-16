@@ -16,11 +16,15 @@ struct Point
     double y;
 };
 
-struct Gateway
+struct LabeledPoint : Point
 {
     std::string label;
-    Point left;
-    Point right;
+};
+
+struct Gateway
+{
+    LabeledPoint left;
+    LabeledPoint right;
 };
 
 Point readPoint(const nlohmann::json &j)
@@ -28,6 +32,14 @@ Point readPoint(const nlohmann::json &j)
     return {
         j.at("x").get<double>(),
         j.at("y").get<double>()};
+}
+
+LabeledPoint readLabeledPoint(const nlohmann::json &j)
+{
+    return {
+        readPoint(j),
+        j.at("label")
+            .get<std::string>()};
 }
 
 bool samePoint(const Point &a, const Point &b)
@@ -48,7 +60,7 @@ struct InputData
     Point start;
     Point end;
     std::vector<Gateway> gateways;
-    std::vector<Point> expectedPath;
+    std::vector<std::string> expectedPath;
 };
 
 InputData readInput(const std::string &filename)
@@ -72,37 +84,35 @@ InputData readInput(const std::string &filename)
     for (std::size_t i = 0; i < gatePoints.size(); i += 2)
     {
         Gateway gateway{
-            gatePoints.at(i).at("label").get<std::string>() + "-" + gatePoints.at(i + 1).at("label").get<std::string>(),
-            readPoint(gatePoints.at(i)),
-            readPoint(gatePoints.at(i + 1))};
-
+            readLabeledPoint(gatePoints.at(i)),
+            readLabeledPoint(gatePoints.at(i + 1)),
+        };
         gateways.push_back(gateway);
     }
 
-    gateways.push_back(Gateway{"to", end, end});
+    gateways.push_back(Gateway{LabeledPoint{end, "to"}, LabeledPoint{end, "to"}});
 
-    std::vector<Point> expectedPath;
+    std::vector<std::string>
+        expectedPath;
 
-    for (const auto &point : data.at("expected"))
+    for (const auto &pointLabel : data.at("expected"))
     {
-        expectedPath.push_back(readPoint(point));
+        expectedPath.push_back(pointLabel);
     }
 
     return InputData{start, end, gateways, expectedPath};
 }
 
-std::vector<Point> findPath(const InputData &data)
+std::vector<std::string> findPath(const InputData &data)
 {
     const auto &start = data.start;
-    const auto &end = data.end;
     const auto &gateways = data.gateways;
 
-    std::vector<Point> path;
-    path.push_back(start);
+    std::vector<std::string> path;
 
-    auto apex = start;
-    auto left = start;
-    auto right = start;
+    auto apex = LabeledPoint{start, "from"};
+    auto left = LabeledPoint{start, "from"};
+    auto right = LabeledPoint{start, "from"};
 
     std::size_t apexIndex = 0;
     std::size_t leftIndex = 0;
@@ -154,7 +164,10 @@ std::vector<Point> findPath(const InputData &data)
             leftIndex = apexIndex;
             rightIndex = apexIndex;
 
-            path.push_back(apex);
+            if (apex.label != "to")
+            {
+                path.push_back(apex.label);
+            }
             i = apexIndex + 1;
         }
         else
@@ -163,15 +176,10 @@ std::vector<Point> findPath(const InputData &data)
         }
     }
 
-    if (!samePoint(end, path.back()))
-    {
-        path.push_back(end);
-    }
-
     return path;
 }
 
-bool runTest(const std::string &filename, const std::vector<Point> &path, const std::vector<Point> &expectedPath)
+bool runTest(const std::string &filename, const std::vector<std::string> &path, const std::vector<std::string> &expectedPath)
 {
     bool passed = path.size() == expectedPath.size();
 
@@ -179,7 +187,7 @@ bool runTest(const std::string &filename, const std::vector<Point> &path, const 
     {
         for (std::size_t i = 0; i < path.size(); ++i)
         {
-            if (!samePoint(path[i], expectedPath[i]))
+            if (path[i] != expectedPath[i])
             {
                 passed = false;
                 break;
@@ -196,17 +204,23 @@ bool runTest(const std::string &filename, const std::vector<Point> &path, const 
         std::cout << "FAIL: " << filename << '\n';
         std::cout << "Expected path (" << expectedPath.size() << " points):\n";
 
-        for (const auto &point : expectedPath)
+        for (const auto &s : expectedPath)
         {
-            std::cout << "(" << point.x << ", " << point.y << ")\n";
+            if (&s != &expectedPath.front())
+                std::cout << '-';
+            std::cout << s;
         }
+        std::cout << '\n';
 
         std::cout << "Actual path (" << path.size() << " points):\n";
 
-        for (const auto &point : path)
+        for (const auto &s : path)
         {
-            std::cout << "(" << point.x << ", " << point.y << ")\n";
+            if (&s != &path.front())
+                std::cout << '-';
+            std::cout << s;
         }
+        std::cout << '\n';
     }
 
     return passed;

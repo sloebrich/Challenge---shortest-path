@@ -2,8 +2,5 @@
   "from": { "x": 0, "y": 0 },
   "to": { "x": 10, "y": 0 },
   "gatePoints": [],
-  "expected": [
-    { "x": 0, "y": 0 },
-    { "x": 10, "y": 0 }
-  ]
+  "expected": []
 }
