@@ -19,7 +19,6 @@ The program takes a start point, a destination, and a series of gateways defined
 - A C++ compiler with C++17 support
 - [CMake](https://cmake.org/) 3.16 or later
 - [nlohmann/json](https://github.com/nlohmann/json)
-- [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/) and [GEOS](https://libgeos.org/) (required by `CMakeLists.txt`; GEOS is linked but not used by the code yet)
 
 ## Getting Started
 
@@ -36,7 +35,7 @@ On Ubuntu or Debian:
 
 ```bash
 sudo apt update
-sudo apt install build-essential cmake pkg-config libgeos-dev nlohmann-json3-dev
+sudo apt install build-essential cmake nlohmann-json3-dev
 ```
 
 ### 3. Build the project
