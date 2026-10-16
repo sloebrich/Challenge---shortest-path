@@ -42,13 +42,6 @@ LabeledPoint readLabeledPoint(const nlohmann::json &j)
             .get<std::string>()};
 }
 
-bool samePoint(const Point &a, const Point &b)
-{
-    constexpr double tolerance = 1e-6;
-
-    return std::abs(a.x - b.x) < tolerance && std::abs(a.y - b.y) < tolerance;
-}
-
 // positive iff p lies to the left when going from a to b
 double crossProduct(const Point &a, const Point &b, const Point &p)
 {
@@ -128,7 +121,7 @@ std::vector<std::string> findPath(const InputData &data)
         // newLeft lies to the right of apex->left, tightening the funnel.
         if (crossProduct(apex, left, newLeft) <= 0)
         {
-            if (samePoint(apex, left) || crossProduct(apex, right, newLeft) > 0)
+            if (apex.label == left.label || crossProduct(apex, right, newLeft) > 0)
             {
                 left = newLeft;
                 leftIndex = i;
@@ -144,7 +137,7 @@ std::vector<std::string> findPath(const InputData &data)
         // newRight lies to the left of apex->right, tightening the funnel.
         if (!apexNeedsUpdate && crossProduct(apex, right, newRight) >= 0)
         {
-            if (samePoint(apex, right) || crossProduct(apex, left, newRight) < 0)
+            if (apex.label == right.label || crossProduct(apex, left, newRight) < 0)
             {
                 right = newRight;
                 rightIndex = i;
