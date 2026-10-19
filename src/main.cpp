@@ -5,7 +5,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <cmath>
 #include <vector>
 
 using json = nlohmann::json;
@@ -27,14 +26,14 @@ struct Gateway
     LabeledPoint right;
 };
 
-Point readPoint(const nlohmann::json &j)
+Point readPoint(const json &j)
 {
     return {
         j.at("x").get<double>(),
         j.at("y").get<double>()};
 }
 
-LabeledPoint readLabeledPoint(const nlohmann::json &j)
+LabeledPoint readLabeledPoint(const json &j)
 {
     return {
         readPoint(j),
@@ -96,8 +95,8 @@ InputData readInput(const std::string &filename)
 
 std::vector<std::string> findPath(const InputData &data)
 {
-    const auto &start = LabeledPoint{data.start, "from"};
-    const auto &end = LabeledPoint{data.end, "to"};
+    const LabeledPoint &start = {data.start, "from"};
+    const LabeledPoint &end = {data.end, "to"};
     const auto &gateways = data.gateways;
 
     std::vector<std::string>
@@ -174,19 +173,7 @@ std::vector<std::string> findPath(const InputData &data)
 
 bool runTest(const std::string &filename, const std::vector<std::string> &path, const std::vector<std::string> &expectedPath)
 {
-    bool passed = path.size() == expectedPath.size();
-
-    if (passed)
-    {
-        for (std::size_t i = 0; i < path.size(); ++i)
-        {
-            if (path[i] != expectedPath[i])
-            {
-                passed = false;
-                break;
-            }
-        }
-    }
+    bool passed = path == expectedPath;
 
     if (passed)
     {

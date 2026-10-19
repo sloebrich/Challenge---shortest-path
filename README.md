@@ -115,7 +115,7 @@ Each point contains numeric `x` and `y` properties. Each gateway point also cont
 - **Pairs:** Consecutive gateway points form a gateway. The first point of a pair is the **left** end and the second is the **right** end, as seen when travelling from `from` towards `to`.
 - **Orientation:** Coordinates use the usual mathematical orientation (x to the right, y up). Travelling in the positive x direction, left is the positive y direction.
 - **Order:** Gateways are processed in the order they appear in `gatePoints`, which must be the order of the intended route.
-- **Distinct points:** No point may occur twice among `from`, `to`, and the gateway points. A gateway therefore cannot have zero width, and the start or destination cannot lie on a gateway point. Use a very narrow gateway, or place the point next to the gateway, instead. Points closer than `1e-6` count as the same point.
+- **Distinct points:** No point may occur twice among `from`, `to`, and the gateway points. A gateway therefore cannot have zero width, and the start or destination cannot lie on a gateway point. Use a very narrow gateway, or place the point next to the gateway, instead. 
 - **Unique labels:** Labels should be unique, so that `expected` identifies each gateway point unambiguously.
 - **Even count:** `gatePoints` must contain an even number of points because the implementation processes them in pairs.
 
