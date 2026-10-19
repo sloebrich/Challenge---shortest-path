@@ -12,6 +12,7 @@ The program takes a start point, a destination, and a series of gateways defined
 - **Label-based results:** The path is reported as the labels of the gateway points where it bends. Start and destination are not part of it.
 - **Automated validation:** Compares the calculated path against the expected one, reports `PASS` or `FAIL`, and sets the exit status accordingly.
 - **Test suite:** A collection of JSON test cases in `tests/`, from a single corner up to corridors with more than 200 gateways.
+- **Visualizer:** A standalone HTML page, `visualizer.html`, that draws a test file: start, destination, gateways, and the expected route (see [Visualizer](#visualizer)).
 - **Configurable input:** Accepts a custom JSON file as a command-line argument.
 
 ## Requirements
@@ -160,6 +161,7 @@ Challenge---shortest-path/
 │   ├── challenge_shortest_path.json
 │   └── ...
 ├── CMakeLists.txt
+├── visualizer.html
 ├── README.md
 └── .gitignore
 ```
@@ -167,6 +169,7 @@ Challenge---shortest-path/
 - `src/main.cpp` — JSON parsing, geometric calculations, funnel algorithm, and test execution.
 - `tests/` — Test input data containing gateway definitions and expected paths (see [Testing](#testing)).
 - `CMakeLists.txt` — CMake configuration for compiling the executable.
+- `visualizer.html` — Browser-based viewer for the JSON test files (see [Visualizer](#visualizer)).
 - `README.md` — This documentation.
 - `.gitignore` — Specifies files excluded from version control.
 
@@ -205,6 +208,27 @@ The test runner compares the labels of the calculated path with `expected`. The 
 Cases that exist in a mirrored version, such as `spiral` and `spiral_mirror`, are the same corridor flipped along the x axis (`y` becomes `-y`) with left and right swapped, so that a mistake on only one side shows up. Other left/right pairs are named `_left` and `_right`.
 
 The expected paths of the large cases were generated with a separate brute-force shortest-path computation that is independent of the funnel implementation.
+
+## Visualizer
+
+`visualizer.html` is a single-file web page that draws a test file in 2D, which makes it easier to see what a test case looks like and why its expected path bends where it does. It needs no build step, no server, and no dependencies. Open it in a browser:
+
+```bash
+open visualizer.html        # macOS
+xdg-open visualizer.html    # Linux
+```
+
+Then click **Choose JSON file** and select a file from `tests/`, or click **Load sample** to see a built-in example. The file is read locally in the browser and is not uploaded anywhere.
+
+The scene shows:
+
+- the start point (`from`, green) and the destination (`to`, red)
+- every gateway as a grey line between its two labelled points
+- the expected route (blue), drawn as a line from the start through the gateway points listed in `expected` to the destination
+
+**Fit view** resets the view to the whole scene. The side panel shows the number of gateway points and corners, and the detected JSON structure. If a label in `expected` does not match any gateway point, the visualizer reports the missing labels.
+
+The visualizer only draws the route stored in `expected`. It does not run the funnel algorithm, so it does not show the calculated path and cannot tell whether a test passes. Use the program for that (see [Testing](#testing)).
 
 ## Limitations
 
