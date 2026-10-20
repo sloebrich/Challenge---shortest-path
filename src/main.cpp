@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <deque>
 
 using json = nlohmann::json;
 
@@ -82,6 +83,8 @@ InputData readInput(const std::string &filename)
         gateways.push_back(gateway);
     }
 
+    gateways.push_back(Gateway{{end, "to"}, {end, "to"}});
+
     std::vector<std::string>
         expectedPath;
 
@@ -99,74 +102,116 @@ std::vector<std::string> findPath(const InputData &data)
     const LabeledPoint &end = {data.end, "to"};
     const auto &gateways = data.gateways;
 
-    std::vector<std::string>
-        path;
+    std::vector<std::string> path;
 
-    auto apex = start;
-    auto left = start;
-    auto right = start;
+    const LabeledPoint *apex = &start;
+    std::deque<const LabeledPoint *> leftQueue;
+    std::deque<const LabeledPoint *> rightQueue;
 
-    std::size_t apexIndex = 0;
-    std::size_t leftIndex = 0;
-    std::size_t rightIndex = 0;
-    std::size_t i = 0;
-
-    while (i <= gateways.size())
+    for (auto const &gateway : gateways)
     {
-        bool apexNeedsUpdate = false;
-        const auto &newLeft = i == gateways.size() ? end : gateways[i].left;
-        const auto &newRight = i == gateways.size() ? end : gateways[i].right;
 
-        // newLeft lies to the right of apex->left, tightening the funnel.
-        if (crossProduct(apex, left, newLeft) <= 0)
+        // gateway.left lies to the right of apex->lastLeft, tightening the funnel.
+        while (!leftQueue.empty() && crossProduct(leftQueue.size() >= 2 ? *leftQueue[leftQueue.size() - 2] : *apex, *leftQueue.back(), gateway.left) <= 0)
         {
-            if (apex.label == left.label || crossProduct(apex, right, newLeft) > 0)
-            {
-                left = newLeft;
-                leftIndex = i;
-            }
-            else
-            {
-                // newLeft even lies to the right of apex->right, crossing the right leg. Make a new funnel.
-                apex = right;
-                apexIndex = rightIndex;
-                apexNeedsUpdate = true;
-            }
+            leftQueue.pop_back();
         }
-        // newRight lies to the left of apex->right, tightening the funnel.
-        if (!apexNeedsUpdate && crossProduct(apex, right, newRight) >= 0)
-        {
-            if (apex.label == right.label || crossProduct(apex, left, newRight) < 0)
-            {
-                right = newRight;
-                rightIndex = i;
-            }
-            else
-            {
-                // newRight even lies to the right of apex->left, crossing the left leg. Make a new funnel.
-                apex = left;
-                apexIndex = leftIndex;
-                apexNeedsUpdate = true;
-            }
-        }
-        if (apexNeedsUpdate)
-        {
-            left = apex;
-            right = apex;
-            leftIndex = apexIndex;
-            rightIndex = apexIndex;
 
-            if (apex.label != end.label)
-            {
-                path.push_back(apex.label);
-            }
-            i = apexIndex + 1;
-        }
-        else
+        // gateway.left even lies to the right of apex->lastRight, crossing the right leg. Make a new funnel.
+        while (!rightQueue.empty() && crossProduct(*apex, *rightQueue.front(), gateway.left) <= 0)
         {
-            i++;
+            auto lastRight = rightQueue.front();
+            rightQueue.pop_front();
+            apex = lastRight;
+            path.push_back(apex->label);
+            leftQueue.clear();
         }
+
+        // gateway.right lies to the left of apex->lastRight, tightening the funnel.
+        while (!rightQueue.empty() && crossProduct(rightQueue.size() >= 2 ? *rightQueue[rightQueue.size() - 2] : *apex, *rightQueue.back(), gateway.right) >= 0)
+        {
+            rightQueue.pop_back();
+        }
+
+        // gateway.right even lies to the left of apex->lastLeft, crossing the left leg. Make a new funnel.
+        while (!leftQueue.empty() && crossProduct(*apex, *leftQueue.front(), gateway.right) >= 0)
+        {
+            auto lastLeft = leftQueue.front();
+            leftQueue.pop_front();
+            apex = lastLeft;
+            path.push_back(apex->label);
+            rightQueue.clear();
+        }
+
+        leftQueue.emplace_back(&gateway.left);
+        rightQueue.emplace_back(&gateway.right);
     }
+
+    // auto left = start;
+    // auto right = start;
+
+    // std::size_t apexIndex = 0;
+    // std::size_t leftIndex = 0;
+    // std::size_t rightIndex = 0;
+    // std::size_t i = 0;
+
+    // while (i <= gateways.size())
+    // {
+    //     std::cout << i << '\n';
+    //     bool apexNeedsUpdate = false;
+    //     const auto &newLeft = i == gateways.size() ? end : gateways[i].left;
+    //     const auto &newRight = i == gateways.size() ? end : gateways[i].right;
+
+    //     // newLeft lies to the right of apex->left, tightening the funnel.
+    //     if (crossProduct(apex, left, newLeft) <= 0)
+    //     {
+    //         if (apex.label == left.label || crossProduct(apex, right, newLeft) > 0)
+    //         {
+    //             left = newLeft;
+    //             leftIndex = i;
+    //         }
+    //         else
+    //         {
+    //             // newLeft even lies to the right of apex->right, crossing the right leg. Make a new funnel.
+    //             apex = right;
+    //             apexIndex = rightIndex;
+    //             apexNeedsUpdate = true;
+    //         }
+    //     }
+    //     // newRight lies to the left of apex->right, tightening the funnel.
+    //     if (!apexNeedsUpdate && crossProduct(apex, right, newRight) >= 0)
+    //     {
+    //         if (apex.label == right.label || crossProduct(apex, left, newRight) < 0)
+    //         {
+    //             right = newRight;
+    //             rightIndex = i;
+    //         }
+    //         else
+    //         {
+    //             // newRight even lies to the right of apex->left, crossing the left leg. Make a new funnel.
+    //             apex = left;
+    //             apexIndex = leftIndex;
+    //             apexNeedsUpdate = true;
+    //         }
+    //     }
+    //     if (apexNeedsUpdate)
+    //     {
+    //         left = apex;
+    //         right = apex;
+    //         leftIndex = apexIndex;
+    //         rightIndex = apexIndex;
+
+    //         if (apex.label != end.label)
+    //         {
+    //             path.push_back(apex.label);
+    //         }
+    //         i = apexIndex + 1;
+    //     }
+    //     else
+    //     {
+    //         i++;
+    //     }
+    // }
 
     return path;
 }
