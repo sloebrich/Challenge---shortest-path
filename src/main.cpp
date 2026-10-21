@@ -104,6 +104,9 @@ std::vector<std::string> findPath(const InputData &data)
 
     std::vector<std::string> path;
 
+    // The funnel is the apex plus a convex chain of gateway points on each side. Every point
+    // enters and leaves a chain at most once, so this runs in linear time. The last gateway is
+    // the destination (added in readInput).
     const LabeledPoint *apex = &start;
     std::deque<const LabeledPoint *> leftQueue;
     std::deque<const LabeledPoint *> rightQueue;
@@ -111,13 +114,13 @@ std::vector<std::string> findPath(const InputData &data)
     for (auto const &gateway : gateways)
     {
 
-        // gateway.left lies to the right of apex->lastLeft, tightening the funnel.
+        // The new left point makes the left chain non-convex: drop its last point.
         while (!leftQueue.empty() && crossProduct(leftQueue.size() >= 2 ? *leftQueue[leftQueue.size() - 2] : *apex, *leftQueue.back(), gateway.left) <= 0)
         {
             leftQueue.pop_back();
         }
 
-        // gateway.left even lies to the right of apex->lastRight, crossing the right leg. Make a new funnel.
+        // The new left point reaches or crosses the right chain: its first point is a corner and the new apex.
         while (!rightQueue.empty() && crossProduct(*apex, *rightQueue.front(), gateway.left) <= 0)
         {
             auto lastRight = rightQueue.front();
@@ -127,13 +130,13 @@ std::vector<std::string> findPath(const InputData &data)
             leftQueue.clear();
         }
 
-        // gateway.right lies to the left of apex->lastRight, tightening the funnel.
+        // The new right point makes the right chain non-convex: drop its last point.
         while (!rightQueue.empty() && crossProduct(rightQueue.size() >= 2 ? *rightQueue[rightQueue.size() - 2] : *apex, *rightQueue.back(), gateway.right) >= 0)
         {
             rightQueue.pop_back();
         }
 
-        // gateway.right even lies to the left of apex->lastLeft, crossing the left leg. Make a new funnel.
+        // The new right point reaches or crosses the left chain: its first point is a corner and the new apex.
         while (!leftQueue.empty() && crossProduct(*apex, *leftQueue.front(), gateway.right) >= 0)
         {
             auto lastLeft = leftQueue.front();
@@ -146,72 +149,6 @@ std::vector<std::string> findPath(const InputData &data)
         leftQueue.emplace_back(&gateway.left);
         rightQueue.emplace_back(&gateway.right);
     }
-
-    // auto left = start;
-    // auto right = start;
-
-    // std::size_t apexIndex = 0;
-    // std::size_t leftIndex = 0;
-    // std::size_t rightIndex = 0;
-    // std::size_t i = 0;
-
-    // while (i <= gateways.size())
-    // {
-    //     std::cout << i << '\n';
-    //     bool apexNeedsUpdate = false;
-    //     const auto &newLeft = i == gateways.size() ? end : gateways[i].left;
-    //     const auto &newRight = i == gateways.size() ? end : gateways[i].right;
-
-    //     // newLeft lies to the right of apex->left, tightening the funnel.
-    //     if (crossProduct(apex, left, newLeft) <= 0)
-    //     {
-    //         if (apex.label == left.label || crossProduct(apex, right, newLeft) > 0)
-    //         {
-    //             left = newLeft;
-    //             leftIndex = i;
-    //         }
-    //         else
-    //         {
-    //             // newLeft even lies to the right of apex->right, crossing the right leg. Make a new funnel.
-    //             apex = right;
-    //             apexIndex = rightIndex;
-    //             apexNeedsUpdate = true;
-    //         }
-    //     }
-    //     // newRight lies to the left of apex->right, tightening the funnel.
-    //     if (!apexNeedsUpdate && crossProduct(apex, right, newRight) >= 0)
-    //     {
-    //         if (apex.label == right.label || crossProduct(apex, left, newRight) < 0)
-    //         {
-    //             right = newRight;
-    //             rightIndex = i;
-    //         }
-    //         else
-    //         {
-    //             // newRight even lies to the right of apex->left, crossing the left leg. Make a new funnel.
-    //             apex = left;
-    //             apexIndex = leftIndex;
-    //             apexNeedsUpdate = true;
-    //         }
-    //     }
-    //     if (apexNeedsUpdate)
-    //     {
-    //         left = apex;
-    //         right = apex;
-    //         leftIndex = apexIndex;
-    //         rightIndex = apexIndex;
-
-    //         if (apex.label != end.label)
-    //         {
-    //             path.push_back(apex.label);
-    //         }
-    //         i = apexIndex + 1;
-    //     }
-    //     else
-    //     {
-    //         i++;
-    //     }
-    // }
 
     return path;
 }
