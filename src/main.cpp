@@ -1,12 +1,12 @@
 
 #include <nlohmann/json.hpp>
 
+#include <deque>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <deque>
 
 using json = nlohmann::json;
 
@@ -96,19 +96,22 @@ InputData readInput(const std::string &filename)
     return InputData{start, end, gateways, expectedPath};
 }
 
+// The point a chain vertex is reached from: the vertex before it, or the apex for the first one.
+const Point &predecessor(const std::deque<LabeledPoint> &queue, const LabeledPoint &apex)
+{
+    return queue.size() >= 2 ? queue[queue.size() - 2] : apex;
+}
+
 std::vector<std::string> findPath(const InputData &data)
 {
-    const LabeledPoint &start = {data.start, "from"};
-    const LabeledPoint &end = {data.end, "to"};
     const auto &gateways = data.gateways;
-
     std::vector<std::string> path;
 
     // Funnel algorithm: the apex plus a chain of gateway points on each side (leftQueue, rightQueue).
     // A chain holds the points the shortest path to the newest left/right gateway point bends around.
     // Each point enters and leaves a chain at most once, so the run time is linear.
     // The last gateway is the destination (added in readInput).
-    LabeledPoint apex = start;
+    LabeledPoint apex = {data.start, "from"};
     std::deque<LabeledPoint> leftQueue;
     std::deque<LabeledPoint> rightQueue;
 
@@ -116,7 +119,7 @@ std::vector<std::string> findPath(const InputData &data)
     {
 
         // Keep the left chain convex (turning left only).
-        while (!leftQueue.empty() && crossProduct(leftQueue.size() >= 2 ? leftQueue[leftQueue.size() - 2] : apex, leftQueue.back(), gateway.left) <= 0)
+        while (!leftQueue.empty() && crossProduct(predecessor(leftQueue, apex), leftQueue.back(), gateway.left) <= 0)
         {
             leftQueue.pop_back();
         }
@@ -132,7 +135,7 @@ std::vector<std::string> findPath(const InputData &data)
         }
 
         // Keep the right chain convex (turning right only).
-        while (!rightQueue.empty() && crossProduct(rightQueue.size() >= 2 ? rightQueue[rightQueue.size() - 2] : apex, rightQueue.back(), gateway.right) >= 0)
+        while (!rightQueue.empty() && crossProduct(predecessor(rightQueue, apex), rightQueue.back(), gateway.right) >= 0)
         {
             rightQueue.pop_back();
         }
@@ -150,8 +153,18 @@ std::vector<std::string> findPath(const InputData &data)
         leftQueue.emplace_back(gateway.left);
         rightQueue.emplace_back(gateway.right);
     }
-
     return path;
+}
+
+void printPath(const std::vector<std::string> &path)
+{
+    for (std::size_t i = 0; i < path.size(); ++i)
+    {
+        if (i > 0)
+            std::cout << '-';
+        std::cout << path[i];
+    }
+    std::cout << '\n';
 }
 
 bool runTest(const std::string &filename, const std::vector<std::string> &path, const std::vector<std::string> &expectedPath)
@@ -167,23 +180,11 @@ bool runTest(const std::string &filename, const std::vector<std::string> &path, 
         std::cout << "FAIL: " << filename << '\n';
         std::cout << "Expected path (" << expectedPath.size() << " points):\n";
 
-        for (const auto &s : expectedPath)
-        {
-            if (&s != &expectedPath.front())
-                std::cout << '-';
-            std::cout << s;
-        }
-        std::cout << '\n';
+        printPath(expectedPath);
 
         std::cout << "Actual path (" << path.size() << " points):\n";
 
-        for (const auto &s : path)
-        {
-            if (&s != &path.front())
-                std::cout << '-';
-            std::cout << s;
-        }
-        std::cout << '\n';
+        printPath(path);
     }
 
     return passed;
