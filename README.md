@@ -169,7 +169,14 @@ The result is an ordered list of the labels of the corner gateway points. The st
 
 The algorithm runs in linear time, O(n) in the number of gateways. Every gateway point is appended to a chain once and removed from it at most once, and the funnel never goes back to gateways it has already processed after finding a corner.
 
-As a stress test, an auto-generated input with 1 million gateways that make a 180° turn around a circular left wall (about 235,000 corners) took 11 s to run. That is the whole run with the default, unoptimized build, and almost all of it is spent parsing the roughly 150 MB JSON file: the funnel computation itself takes about 0.14 s. A release build (see [Build the project](#3-build-the-project)) runs the same input in about 1.3 s. The input is parsed completely into memory first, which took about 1 GB for this file.
+As a stress test, an auto-generated input with 1 million gateways that make a 180° turn around a circular left wall (about 235,000 corners) took 11 s to run with the default build. Almost all of that is spent parsing the roughly 150 MB JSON file, not computing the path:
+
+| Build | Total | JSON parsing | Funnel computation |
+|---|---|---|---|
+| Default (no optimizations) | about 11 s | about 10.8 s | about 0.14 s |
+| Release (`-O3 -DNDEBUG`, see [Build the project](#3-build-the-project)) | about 1.3 s | about 1.1 s | about 0.015 s |
+
+The parsing time is high because the JSON library is header-only and heavily templated, so without optimizations its many small functions are not inlined. The input is parsed completely into memory first, which took about 1 GB for this file.
 
 ## Project Structure
 
