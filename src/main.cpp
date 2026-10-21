@@ -107,47 +107,45 @@ std::vector<std::string> findPath(const InputData &data)
     // The funnel is the apex plus a convex chain of gateway points on each side. Every point
     // enters and leaves a chain at most once, so this runs in linear time. The last gateway is
     // the destination (added in readInput).
-    const LabeledPoint *apex = &start;
-    std::deque<const LabeledPoint *> leftQueue;
-    std::deque<const LabeledPoint *> rightQueue;
+    LabeledPoint apex = start;
+    std::deque<LabeledPoint> leftQueue;
+    std::deque<LabeledPoint> rightQueue;
 
-    for (auto const &gateway : gateways)
+    for (const auto &gateway : gateways)
     {
 
         // The new left point makes the left chain non-convex: drop its last point.
-        while (!leftQueue.empty() && crossProduct(leftQueue.size() >= 2 ? *leftQueue[leftQueue.size() - 2] : *apex, *leftQueue.back(), gateway.left) <= 0)
+        while (!leftQueue.empty() && crossProduct(leftQueue.size() >= 2 ? leftQueue[leftQueue.size() - 2] : apex, leftQueue.back(), gateway.left) <= 0)
         {
             leftQueue.pop_back();
         }
 
         // The new left point reaches or crosses the right chain: its first point is a corner and the new apex.
-        while (!rightQueue.empty() && crossProduct(*apex, *rightQueue.front(), gateway.left) <= 0)
+        while (!rightQueue.empty() && crossProduct(apex, rightQueue.front(), gateway.left) <= 0)
         {
-            auto lastRight = rightQueue.front();
+            apex = rightQueue.front();
             rightQueue.pop_front();
-            apex = lastRight;
-            path.push_back(apex->label);
+            path.push_back(apex.label);
             leftQueue.clear();
         }
 
         // The new right point makes the right chain non-convex: drop its last point.
-        while (!rightQueue.empty() && crossProduct(rightQueue.size() >= 2 ? *rightQueue[rightQueue.size() - 2] : *apex, *rightQueue.back(), gateway.right) >= 0)
+        while (!rightQueue.empty() && crossProduct(rightQueue.size() >= 2 ? rightQueue[rightQueue.size() - 2] : apex, rightQueue.back(), gateway.right) >= 0)
         {
             rightQueue.pop_back();
         }
 
         // The new right point reaches or crosses the left chain: its first point is a corner and the new apex.
-        while (!leftQueue.empty() && crossProduct(*apex, *leftQueue.front(), gateway.right) >= 0)
+        while (!leftQueue.empty() && crossProduct(apex, leftQueue.front(), gateway.right) >= 0)
         {
-            auto lastLeft = leftQueue.front();
+            apex = leftQueue.front();
             leftQueue.pop_front();
-            apex = lastLeft;
-            path.push_back(apex->label);
+            path.push_back(apex.label);
             rightQueue.clear();
         }
 
-        leftQueue.emplace_back(&gateway.left);
-        rightQueue.emplace_back(&gateway.right);
+        leftQueue.emplace_back(gateway.left);
+        rightQueue.emplace_back(gateway.right);
     }
 
     return path;
