@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using json = nlohmann::json;
@@ -73,6 +74,7 @@ InputData readInput(const std::string &filename)
     const auto &gatePoints = data.at("gatePoints");
 
     std::vector<Gateway> gateways;
+    gateways.reserve(gatePoints.size() / 2 + 1);
 
     for (std::size_t i = 0; i < gatePoints.size(); i += 2)
     {
@@ -93,7 +95,7 @@ InputData readInput(const std::string &filename)
         expectedPath.push_back(pointLabel);
     }
 
-    return InputData{start, end, gateways, expectedPath};
+    return InputData{start, end, std::move(gateways), std::move(expectedPath)};
 }
 
 // The point a chain vertex is reached from: the vertex before it, or the apex for the first one.
